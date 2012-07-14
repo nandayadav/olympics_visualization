@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<!-- Load the Paper.js library -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script type="text/javascript" src="js/paper.js"></script>
+<!-- Define inlined PaperScript associate it with myCanvas -->
+<script type="text/paperscript" canvas="myCanvas">
+    // Create a Paper.js Path to draw a line into it:
+    var hitOptions = {
+        segments: true,
+        stroke: true,
+        fill: true,
+        type: 'Path.Circle', 
+        tolerance: 1
+    };
+    var x_axis = new Path();
+    // Give the stroke a color
+    x_axis.strokeColor = 'white';
+    var top = new Point(100, 100);
+    var origin = new Point(100, 600);
+    // Move to start and draw a line from there
+    x_axis.moveTo(top);
+    // Note the plus operator on Point objects.
+    // PaperScript does that for us, and much more!
+    x_axis.lineTo(top + [ 0, 500 ]);
+    var y_axis = new Path();
+    y_axis.strokeColor = 'white';
+    y_axis.moveTo(origin);
+    y_axis.lineTo(origin + [ 800, 0 ]);
+    var maxPoint = new Point(600, 600);
+    var circles = [];
+    $.ajax({
+        url: '/countries',
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            $.each(data, function(key, val) {
+                var randomPoint = Point.random();
+                var point = maxPoint * randomPoint;
+                var size = val['gold'] + val['silver'] + val['bronze'];
+                var circle = new Path.Circle(point, size/4);
+                circle.fillColor = 'yellow';
+                circles.push(circle);
+            });
+            //alert('loaded');
+        }
+    });
+
+    function showInfo(circle){
+        
+    }
+
+    
+    var text = new PointText(new Point(100, 70));
+    text.justification = 'center';
+    text.fillColor = 'white';
+    text.content = 'GDP';
+
+    function onMouseMove(event) {
+        var hitResult = project.hitTest(event.point, hitOptions);
+        project.activeLayer.selected = false;
+        if (hitResult && hitResult.item)
+            alert(hitResult.location)
+            hitResult.item.selected = true;
+    }
+
+    function onMouseDown(event) {
+        for (var i = 0; i < circles.length; i++) {
+            var destination = Point.random() * view.size;
+            c = circles[i];
+            
+            var vector = destination - c.position;
+            // var emptyCircle = new Path.Circle(c.position, c.length);
+            // emptyCircle.strokeColor = 'white';
+            //c.position += vector / 30;
+            var prevPosition = c.position;
+            c.position = destination;
+            // var tracePath = new Path();
+            // tracePath.strokeColor = 'white';
+            // tracePath.add(prevPosition, c.position);
+        }
+    }
+    function onFrame(event) {
+
+        
+    }
+</script>
+</head>
+<body>
+    <canvas id="myCanvas" style="background-color: #000;" resize></canvas>
+</body>
+</html>
