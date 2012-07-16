@@ -4,9 +4,8 @@
 <!-- Load the Paper.js library -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 <script type="text/javascript" src="js/paper.js"></script>
-<!-- Define inlined PaperScript associate it with myCanvas -->
+<script type="text/javascript" src="js/underscore-min.js"></script>
 <script type="text/paperscript" canvas="myCanvas">
-    // Create a Paper.js Path to draw a line into it:
     var hitOptions = {
         segments: true,
         stroke: true,
@@ -14,80 +13,168 @@
         type: 'Path.Circle', 
         tolerance: 1
     };
-    var x_axis = new Path();
-    // Give the stroke a color
-    x_axis.strokeColor = 'white';
-    var top = new Point(100, 100);
-    var origin = new Point(100, 600);
-    // Move to start and draw a line from there
-    x_axis.moveTo(top);
-    // Note the plus operator on Point objects.
-    // PaperScript does that for us, and much more!
-    x_axis.lineTo(top + [ 0, 500 ]);
-    var y_axis = new Path();
-    y_axis.strokeColor = 'white';
-    y_axis.moveTo(origin);
-    y_axis.lineTo(origin + [ 800, 0 ]);
-    var maxPoint = new Point(600, 600);
-    var circles = [];
+
+    var globalNodes = [];
+    var olympicEvents = [];
+    var info, medals; //Text Info 
+
+    //Event class
+    var OlympicEvent = (function() {
+      function OlympicEvent(year, color, nodes, xPosition, group) {
+        this.year = year;
+        this.color = color;
+        this.nodes = nodes;
+        this.xPosition = xPosition;
+        this.group = group;
+        // _.each(this.nodes, function(n){ this.group.addChild(n.circle) });
+      }
+
+      OlympicEvent.prototype.draw = function() {
+        drawCircles(this.nodes, this.xPosition, this.color);
+        //add to group
+        //_.each(this.nodes, function(n){ this.group.addChild(n.circle) });
+      };
+
+      return OlympicEvent;
+    })();
+
+    //Node class
+    var Node = Base.extend({
+      initialize: function(name, gold, silver, bronze, gdp, year, circle, radius) {
+        this.name = name;
+        this.gold = gold;
+        this.silver = silver;
+        this.bronze = bronze;
+        this.gdp = gdp;
+        this.year = year;
+        this.circle = circle;
+        this.radius = radius;
+      },
+
+      explode: function() {
+        info.content = this.name;
+        medals.content = "Gold: " + this.gold + " Silver: " + this.silver + " Bronze: " + this.bronze;
+      }
+
+    });
+
+    setupInfo = function(x, y) {
+      var countryStyle, medalsStyle;
+      info = new PointText(new Point(x, y));
+      countryStyle = new CharacterStyle();
+      countryStyle.fontSize = 16;
+      countryStyle.fillColor = 'white';
+      info.characterStyle = countryStyle;
+      medalsStyle = new CharacterStyle();
+      medalsStyle.fontSize = 10;
+      medalsStyle.fillColor = 'white';
+      info.content = "Hi there";
+      medals = new PointText(new Point(900, 120));
+      medals.characterStyle = medalsStyle;
+      medals.content = "medals here..";
+    }
+
+    clearInfo = function() {
+      info.content = "";
+      medals.content = "";
+    }
+
+    drawLine = function(pointA, pointB, strokeWidth) {
+      var line = new Path.Line(pointA, pointB);
+      line.strokeColor = 'white';
+      line.strokeWidth = strokeWidth;
+    };
+
+    drawAxes = function() {
+      var origin, top;
+      origin = new Point(50, 650);
+      top = new Point(50, 50);
+      this.drawLine(top, top.add([0, 600]), 1);
+      this.drawLine(origin, origin.add([800, 0]), 1);
+    };
+
+
+    //Draw circles for all nodes in a group
+    drawCircles = function(countries, xPosition, color) {
+      var circle, point, size, yPoint;
+
+      _.each(countries, function(n) { 
+        size = n.gold + n.silver + n.bronze;
+        size = size / 4;
+        if (size < 1) {
+          size = 2;
+        } else if (size < 5) {
+          size = size * 2;
+        }
+        point = new Point((Math.random() * 100) + xPosition, 0);
+        yPoint = 650 - (n.gdp / 100);
+        if (yPoint < 50) {
+          yPoint = 50;
+        }
+        point.y = yPoint;
+        circle = new Path.Circle(point, size);
+        circle.fillColor = color;
+        n.circle = circle;
+        n.radius = size;
+        console.log("name: " + n.name + " size: " + n.gdp);
+      });
+    };
+
+
+    //Draw lines
+    drawAxes();
+    //Info setup
+    setupInfo(900, 100);
     $.ajax({
         url: '/countries',
         type: 'GET',
         dataType: 'json',
         success: function(data) {
-            $.each(data, function(key, val) {
-                var randomPoint = Point.random();
-                var point = maxPoint * randomPoint;
-                var size = val['gold'] + val['silver'] + val['bronze'];
-                var circle = new Path.Circle(point, size/4);
-                circle.fillColor = 'yellow';
-                circles.push(circle);
+            var results1 = [];
+            var results2 = [];
+            _.each(data, function(f) { 
+                results1.push(new Node(f['name'], parseInt(f['gold']), parseInt(f['silver']), parseInt(f['bronze']), parseInt(f['gdp']), 2008, null, null));
+
+
+
+                results2.push(new Node(f['name'], parseInt(f['gold']), parseInt(f['silver']), parseInt(f['bronze']), parseInt(f['gdp']), 2004, null, null));
             });
-            //alert('loaded');
+            globalNodes = results1;
+            olympicEvents.push(new OlympicEvent(2008, 'yellow', results1, 100, new Group()));
+            olympicEvents.push(new OlympicEvent(2004, 'orange', results2, 200, new Group()));
+            _.each(olympicEvents, function(e){ e.draw() });
+
         }
+
     });
-
-    function showInfo(circle){
-        
-    }
-
-    
-    var text = new PointText(new Point(100, 70));
-    text.justification = 'center';
-    text.fillColor = 'white';
-    text.content = 'GDP';
-
     function onMouseMove(event) {
-        var hitResult = project.hitTest(event.point, hitOptions);
-        project.activeLayer.selected = false;
-        if (hitResult && hitResult.item)
-            alert(hitResult.location)
-            hitResult.item.selected = true;
-    }
-
-    function onMouseDown(event) {
-        for (var i = 0; i < circles.length; i++) {
-            var destination = Point.random() * view.size;
-            c = circles[i];
-            
-            var vector = destination - c.position;
-            // var emptyCircle = new Path.Circle(c.position, c.length);
-            // emptyCircle.strokeColor = 'white';
-            //c.position += vector / 30;
-            var prevPosition = c.position;
-            c.position = destination;
-            // var tracePath = new Path();
-            // tracePath.strokeColor = 'white';
-            // tracePath.add(prevPosition, c.position);
-        }
-    }
-    function onFrame(event) {
-
+      var hitResult = project.hitTest(event.point, hitOptions);
+      var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+      allNodes = _.flatten(allNodes);
+      if (hitResult && hitResult.item) {
+        var hitPoint = hitResult.item.position;
         
+        console.log("Size: " + allNodes.length);
+        _.each(allNodes, function(n){
+          if (hitPoint.isClose(n.circle.position, n.radius)) {
+            _.each(allNodes, function(k){
+              if(k !== n ) {
+                k.circle.opacity = 0.5;
+              }
+            });
+            n.explode();
+          }
+        });
+      } else {
+        clearInfo();
+        _.each(allNodes, function(i){ i.circle.opacity = 1; });
+      }
     }
+
+    function onFrame(event) { }
 </script>
 </head>
 <body>
-    <canvas id="myCanvas" style="background-color: #000;" resize></canvas>
+    <canvas id="myCanvas" width="1200" height="800" style="background-color: #000;"></canvas>
 </body>
 </html>
