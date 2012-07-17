@@ -93,10 +93,21 @@
       this.drawLine(origin, origin.add([800, 0]), 1);
     };
 
+    //Checks if given point and radius will collide with any of already drawn circles
+    //returns tolerance(distance) if collision, or false if no collision
+    detectCollision = function(countries, point, size) {
+      var closeCircle;
+      closeCircle = _.find(countries, function(c){ return point.isClose(c.circle.position, size + c.radius); });
+      if(closeCircle)
+        return closeCircle.radius;
+      else
+        return false;
+    }
 
     //Draw circles for all nodes in a group
     drawCircles = function(countries, xPosition, color) {
       var circle, point, size, yPoint;
+      var drawnCountries = [];
 
       _.each(countries, function(n) { 
         size = n.gold + n.silver + n.bronze;
@@ -112,41 +123,49 @@
           yPoint = 50;
         }
         point.y = yPoint;
+        //detect if its colliding with another circle
+        var colliding = detectCollision(drawnCountries, point, size);
+        if(colliding) {
+          point.x += 2*colliding;
+        } else {
+          //console.log("NO collision, moving on..")
+        }
         circle = new Path.Circle(point, size);
         circle.fillColor = color;
         n.circle = circle;
         n.radius = size;
-        console.log("name: " + n.name + " size: " + n.gdp);
+        drawnCountries.push(n);
       });
     };
+
+    fetchData = function(year, xPosition, color) {
+      $.ajax({
+        url: "/countries?year=" + year,
+        type: 'GET',
+        dataType: 'json',
+        success: function(data) {
+          var results = [];
+          _.each(data, function(f) { 
+            results.push(new Node(f['name'], parseInt(f['gold']), parseInt(f['silver']), parseInt(f['bronze']), parseInt(f['gdp']), year, null, null));
+          });
+          globalNodes = results;
+          var olympicEvent = new OlympicEvent(year, color, results, xPosition, new Group());
+          olympicEvents.push(olympicEvent);
+          olympicEvent.draw();
+        }
+
+      });
+    }
 
 
     //Draw lines
     drawAxes();
     //Info setup
     setupInfo(900, 100);
-    $.ajax({
-        url: '/countries',
-        type: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            var results1 = [];
-            var results2 = [];
-            _.each(data, function(f) { 
-                results1.push(new Node(f['name'], parseInt(f['gold']), parseInt(f['silver']), parseInt(f['bronze']), parseInt(f['gdp']), 2008, null, null));
+    fetchData(1976, 100, 'red');
+    fetchData(2004, 200, 'yellow'); //also draws the event
+    fetchData(2008, 300, 'orange');
 
-
-
-                results2.push(new Node(f['name'], parseInt(f['gold']), parseInt(f['silver']), parseInt(f['bronze']), parseInt(f['gdp']), 2004, null, null));
-            });
-            globalNodes = results1;
-            olympicEvents.push(new OlympicEvent(2008, 'yellow', results1, 100, new Group()));
-            olympicEvents.push(new OlympicEvent(2004, 'orange', results2, 200, new Group()));
-            _.each(olympicEvents, function(e){ e.draw() });
-
-        }
-
-    });
     function onMouseMove(event) {
       var hitResult = project.hitTest(event.point, hitOptions);
       var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
@@ -154,7 +173,7 @@
       if (hitResult && hitResult.item) {
         var hitPoint = hitResult.item.position;
         
-        console.log("Size: " + allNodes.length);
+        //console.log("Size: " + allNodes.length);
         _.each(allNodes, function(n){
           if (hitPoint.isClose(n.circle.position, n.radius)) {
             _.each(allNodes, function(k){
