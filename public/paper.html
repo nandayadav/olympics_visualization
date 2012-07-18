@@ -138,6 +138,13 @@
       });
     };
 
+    //Draws trace of a country as it moves from one olympic event to next
+    drawTraces = function(country) {
+      var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+      allNodes = _.flatten(allNodes);
+
+    }
+
     fetchData = function(year, xPosition, color) {
       $.ajax({
         url: "/countries?year=" + year,
@@ -146,7 +153,7 @@
         success: function(data) {
           var results = [];
           _.each(data, function(f) { 
-            results.push(new Node(f['name'], parseInt(f['gold']), parseInt(f['silver']), parseInt(f['bronze']), parseInt(f['gdp']), year, null, null));
+            results.push(new Node(f['name'], f['gold'], f['silver'], f['bronze'], f['gdp'], year, null, null));
           });
           globalNodes = results;
           var olympicEvent = new OlympicEvent(year, color, results, xPosition, new Group());
@@ -162,9 +169,9 @@
     drawAxes();
     //Info setup
     setupInfo(900, 100);
-    fetchData(2000, 100, 'teal');
-    fetchData(2004, 200, 'yellow'); //also draws the event
-    fetchData(2008, 300, 'orange');
+    fetchData(2000, 50, 'teal');
+    fetchData(2004, 150, 'yellow'); //also draws the event
+    fetchData(2008, 250, 'orange');
 
     function onMouseMove(event) {
       var hitResult = project.hitTest(event.point, hitOptions);
@@ -177,8 +184,9 @@
         _.each(allNodes, function(n){
           if (hitPoint.isClose(n.circle.position, n.radius)) {
             _.each(allNodes, function(k){
-              if(k !== n ) {
+              if (k !== n ) {
                 k.circle.opacity = 0.5;
+                //k.circle.visible = false;
               }
             });
             n.explode();
@@ -187,7 +195,33 @@
       } else {
         clearInfo();
         _.each(allNodes, function(i){ i.circle.opacity = 1; });
+        //_.each(allNodes, function(i){ i.circle.visible = true; });
       }
+    }
+
+    function onMouseUp(even) {
+      var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+      allNodes = _.flatten(allNodes);
+      _.each(allNodes, function(n) { n.circle.visible = true });
+    }
+
+    function onMouseDown(event) {
+      var hitResult = project.hitTest(event.point, hitOptions);
+      var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+      allNodes = _.flatten(allNodes);
+      var hitCountry;
+      if (hitResult && hitResult.item) {
+        hitCountry = _.find(allNodes, function(c){ return hitResult.item.position.isClose(c.circle.position, c.radius); });
+        console.log("Country found" + hitCountry);
+      } 
+      if (hitCountry) {
+        _.each(allNodes, function(n) {
+          if (n.name != hitCountry.name) {
+            n.circle.visible = false;
+          }
+        });
+      }
+
     }
 
     function onFrame(event) { }
