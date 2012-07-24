@@ -30,12 +30,6 @@
         // _.each(this.nodes, function(n){ this.group.addChild(n.circle) });
       }
 
-      OlympicEvent.prototype.draw = function() {
-        drawCircles(this.nodes, this.xPosition, this.color);
-        //add to group
-        //_.each(this.nodes, function(n){ this.group.addChild(n.circle) });
-      };
-
       OlympicEvent.prototype.initialDraw = function() {
         drawInitialCircles(this.nodes, this.xPosition, this.color);
         //add to group
@@ -56,27 +50,13 @@
         this.year = year;
         this.circle = circle;
         this.radius = radius;
+        this.infoText = null;
         // this.compoundCircle = null;
       },
 
       explode: function() {
         info.content = this.name;
         medals.content = "Gold: " + this.gold + " Silver: " + this.silver + " Bronze: " + this.bronze;
-        //this.circle.scale(2);
-        // if (this.compoundCircle) {
-        //   this.compoundCircle.visible = true;
-        //   this.circle.visible = false;
-        // } else {
-        //   //Draw compound for first time
-        //   var compound = new CompoundPath([
-        //       new Path.Circle(this.circle.position, this.radius),
-        //       new Path.Circle(this.circle.position, this.radius * 2)
-        //   ]); 
-        //   compound.fillColor = 'green';
-        //   this.circle.visible = false;
-        //   this.compoundCircle = compound;
-        // }
-
       }
 
     });
@@ -160,40 +140,15 @@
         circle.fillColor = color;
         n.circle = circle;
         n.radius = size;
-      });
-    };
-
-    //Draw circles for all nodes in a group
-    drawCircles = function(countries, xPosition, color) {
-      var circle, point, size, yPoint, colliding;
-      var drawnCountries = [];
-
-      _.each(countries, function(n) { 
-        size = n.gold + n.silver + n.bronze;
-        size = size / 4;
-        if (size < 1) {
-          size = 2;
-        } else if (size < 5) {
-          size = size * 2;
-        }
-        point = new Point((Math.random() * 100) + xPosition, 0);
-        yPoint = 650 - (n.gdp / 100);
-        if (yPoint < 50) {
-          yPoint = 50;
-        }
-        point.y = yPoint;
-        //detect if its colliding with another circle
-        colliding = detectCollision(drawnCountries, point, size);
-        if(colliding) {
-          point.x += 2*colliding;
-        } else {
-          //console.log("NO collision, moving on..")
-        }
-        circle = new Path.Circle(point, size);
-        circle.fillColor = color;
-        n.circle = circle;
-        n.radius = size;
-        drawnCountries.push(n);
+        info = new PointText(point + [n.radius, 0]);
+        info.fontSize = 10;
+        info.fillColor = 'white';
+        info.content = "+10";
+        info.visible = false;
+        n.infoText = info;
+        console.log("///////");
+        console.log(n.infoText);
+        
       });
     };
 
@@ -208,6 +163,7 @@
           path.add(c.circle.position);
           //path.curveTo(c.circle.position, c.circle.position);
         }
+        c.infoText.visible = true;
       });
 
     }
@@ -256,7 +212,7 @@
           if (hitPoint.isClose(n.circle.position, n.radius)) {
             _.each(allNodes, function(k){
               if (k !== n ) {
-                k.circle.opacity = 0.5;
+                k.circle.opacity = 0.4;
                 //k.circle.visible = false;
               }
             });
@@ -277,7 +233,7 @@
       allNodes = _.flatten(allNodes);
       _.each(allNodes, function(n) { 
         n.circle.visible = true;
-        
+        n.infoText.visible = false;
       });
     }
 
@@ -316,6 +272,7 @@
           } else {
             //console.log("NO collision, moving on..")
           }
+          n.infoText.position = n.circle.position + [n.radius, 0];
           drawnCountries.push(n);
         });
       }
