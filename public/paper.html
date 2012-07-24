@@ -31,7 +31,7 @@
       }
 
       OlympicEvent.prototype.initialDraw = function() {
-        drawInitialCircles(this.nodes, this.xPosition, this.color);
+        drawInitialCircles(this.nodes, this.xPosition, this.color, this.year);
         //add to group
         //_.each(this.nodes, function(n){ this.group.addChild(n.circle) });
       };
@@ -41,15 +41,15 @@
 
     //Node class
     var Node = Base.extend({
-      initialize: function(name, gold, silver, bronze, gdp, year, circle, radius) {
+      initialize: function(name, gold, silver, bronze, gdp, year) {
         this.name = name;
         this.gold = gold;
         this.silver = silver;
         this.bronze = bronze;
         this.gdp = gdp;
         this.year = year;
-        this.circle = circle;
-        this.radius = radius;
+        this.circle = null;
+        this.radius = null;
         this.infoText = null;
         // this.compoundCircle = null;
       },
@@ -124,9 +124,19 @@
         return false;
     }
 
-    drawInitialCircles = function(countries, xPosition, color) {
+    drawInitialCircles = function(countries, xPosition, color, year) {
       var circle, point, size, yPoint, colliding;
-
+      console.log("This.." + year);
+      _.each(olympicEvents, function(c){
+        console.log("Prev.." + c.year);
+      });
+      prevEvent = _.find(olympicEvents, function(e){ return (e.year == (year - 4)); });
+      if (prevEvent) {
+      } else {
+        console.log("Prev not found..")
+      }
+        
+      console.log(_.size(olympicEvents));
       _.each(countries, function(n) { 
         size = n.gold + n.silver + n.bronze;
         size = size / 4;
@@ -140,14 +150,26 @@
         circle.fillColor = color;
         n.circle = circle;
         n.radius = size;
-        info = new PointText(point + [n.radius, 0]);
+        tInfo = new PointText(point + [n.radius, 0]);
         info.fontSize = 10;
-        info.fillColor = 'white';
-        info.content = "+10";
-        info.visible = false;
-        n.infoText = info;
-        console.log("///////");
-        console.log(n.infoText);
+        
+        if (prevEvent) {
+          prevNode = _.find(prevEvent.nodes, function(c){ return (c.name == n.name); });
+          if (prevNode) {
+            diff = (n.gold + n.silver + n.bronze) - (prevNode.gold + prevNode.silver + prevNode.bronze);
+            tInfo.content = "Medals: " + diff + " GDP: " + (n.gdp - prevNode.gdp);
+            if (diff >= 0) {
+              tInfo.fillColor = 'green';
+            } else {
+              tInfo.fillColor = 'red';
+            }
+          } else {
+            tInfo.content = "0";
+          }
+          
+        } 
+        tInfo.visible = false;
+        n.infoText = tInfo;
         
       });
     };
@@ -174,9 +196,9 @@
         type: 'GET',
         dataType: 'json',
         success: function(data) {
-          var results = [];
+          results = [];
           _.each(data, function(f) { 
-            results.push(new Node(f['name'], f['gold'], f['silver'], f['bronze'], f['gdp'], year, null, null));
+            results.push(new Node(f['name'], f['gold'], f['silver'], f['bronze'], f['gdp'], year));
           });
           globalNodes = results;
           var olympicEvent = new OlympicEvent(year, color, results, xPosition, new Group());
