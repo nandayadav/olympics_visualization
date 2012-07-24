@@ -133,15 +133,7 @@
 
     drawInitialCircles = function(countries, xPosition, color, year) {
       var circle, point, size, yPoint, colliding;
-      console.log("This.." + year);
-      _.each(olympicEvents, function(c){
-        console.log("Prev.." + c.year);
-      });
       prevEvent = _.find(olympicEvents, function(e){ return (e.year == (year - 4)); });
-      if (prevEvent) {
-      } else {
-        console.log("Prev not found..")
-      }
 
       _.each(countries, function(n) {
         size = n.gold + n.silver + n.bronze;
@@ -180,18 +172,23 @@
       });
     };
 
-    //Draws trace of a country as it moves from one olympic event to next
     drawTraces = function(countries) {
       countries = _.sortBy(countries, function(c){ return c.year; });
       var path = new Path();
       path.strokeColor = 'white';
       var first = _.first(countries);
+      var last = _.last(countries);
       path.add(first.circle.position);
+      i = 1;
       _.each(countries, function(c){
         if (c != first) {
-          path.add(c.circle.position);
-          //path.curveTo(c.circle.position, c.circle.position);
+          nextCountry = countries[i+1];
+          if (nextCountry) {
+            path.curveTo(c.circle.position, nextCountry.circle.position);
+          }
+          i++;
         }
+        path.smooth();
         c.infoText.visible = true;
       });
 
@@ -311,6 +308,6 @@
 </script>
 </head>
 <body>
-    <canvas id="myCanvas" width="1200" height="800" style="background-color: #000;"></canvas>
+  <canvas id="myCanvas" width="1200" height="800" style="background-color: #000;"></canvas>
 </body>
 </html>
