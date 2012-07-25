@@ -13,10 +13,10 @@
         tolerance: 1
     };
 
-    var globalNodes = [];
     var olympicEvents = [];
     var info, medals; //Text Info
     var currentNode = null;
+    var initialState = true;
 
     //Event class
     var OlympicEvent = (function() {
@@ -107,15 +107,15 @@
     };
 
     drawYears = function(years) {
-        yrLabel = new PointText(new Point(70, 690));
-        yrLabel.fontSize = 14;
-        yrLabel.fillColor = 'white';
-        var i = 0;
+      yrLabel = new PointText(new Point(70, 690));
+      yrLabel.fontSize = 14;
+      yrLabel.fillColor = 'white';
+      var i = 0;
       _.each(years, function(y) {
-          cloned = yrLabel.clone();
-          cloned.content = y;
-          cloned.position.x += (i * 150);
-          i++;
+        cloned = yrLabel.clone();
+        cloned.content = y;
+        cloned.position.x += (i * 150);
+        i++;
       });
 
     }
@@ -133,8 +133,6 @@
 
     drawInitialCircles = function(countries, xPosition, color, year) {
       var circle, point, size, yPoint, colliding;
-      prevEvent = _.find(olympicEvents, function(e){ return (e.year == (year - 4)); });
-
       _.each(countries, function(n) {
         size = n.gold + n.silver + n.bronze;
         size = size / 4;
@@ -148,27 +146,6 @@
         circle.fillColor = color;
         n.circle = circle;
         n.radius = size;
-        tInfo = new PointText(point + [n.radius, 0]);
-        info.fontSize = 10;
-
-        if (prevEvent) {
-          prevNode = _.find(prevEvent.nodes, function(c){ return (c.name == n.name); });
-          if (prevNode) {
-            diff = (n.gold + n.silver + n.bronze) - (prevNode.gold + prevNode.silver + prevNode.bronze);
-            tInfo.content = "Medals: " + diff + " GDP: " + (n.gdp - prevNode.gdp);
-            if (diff >= 0) {
-              tInfo.fillColor = 'green';
-            } else {
-              tInfo.fillColor = 'red';
-            }
-          } else {
-            tInfo.content = "0";
-          }
-
-        }
-        tInfo.visible = false;
-        n.infoText = tInfo;
-
       });
     };
 
@@ -194,6 +171,59 @@
 
     }
 
+    computeInfo = function(countries, year) {
+      var prevEvent, tinfo;
+      prevEvent = _.find(olympicEvents, function(e){ return (e.year == (year - 4)); });
+      _.each(countries, function(n) {
+        tInfo = new PointText(n.circle.position + [n.radius, 0]);
+        info.fontSize = 10;
+
+        if (prevEvent) {
+          prevNode = _.find(prevEvent.nodes, function(c){ return (c.name == n.name); });
+          if (prevNode) {
+            diff = (n.gold + n.silver + n.bronze) - (prevNode.gold + prevNode.silver + prevNode.bronze);
+            tInfo.content = "Medals: " + diff + " GDP: " + (n.gdp - prevNode.gdp);
+            if (diff >= 0) {
+              tInfo.fillColor = 'green';
+            } else {
+              tInfo.fillColor = 'red';
+            }
+          } else {
+            tInfo.content = "0";
+          }
+
+        }
+        tInfo.visible = false;
+        n.infoText = tInfo;
+
+      });
+    }
+
+    //Moves nodes to its proper position based in GDP value
+    explodeNodes = function() {
+      var colliding;
+      // var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+      // allNodes = _.flatten(allNodes);
+      _.each(olympicEvents, function(e) {
+        computeInfo(e.nodes, e.year);
+        var drawnCountries = [];
+        _.each(e.nodes, function(n) {
+            yPoint = 650 - (n.gdp / 100);
+            if (yPoint < 50) {
+              yPoint = 50;
+            }
+            n.circle.position.y = yPoint;
+            //detect if its colliding with another circle
+            colliding = detectCollision(drawnCountries, n.circle.position, n.radius);
+            if(colliding) {
+              n.circle.position.x += 2*colliding;
+            }
+            n.infoText.position = n.circle.position + [n.radius, 0];
+            drawnCountries.push(n);
+        });
+      });
+    }
+
     fetchData = function(year, xPosition, color) {
       $.ajax({
         url: "/countries?year=" + year,
@@ -204,7 +234,6 @@
           _.each(data, function(f) {
             results.push(new Node(f['name'], f['gold'], f['silver'], f['bronze'], f['gdp'], year));
           });
-          globalNodes = results;
           var olympicEvent = new OlympicEvent(year, color, results, xPosition, new Group());
           olympicEvents.push(olympicEvent);
           olympicEvent.initialDraw();
@@ -254,7 +283,7 @@
       }
     }
 
-    function onMouseUp(even) {
+    function onMouseUp(event) {
       var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
       allNodes = _.flatten(allNodes);
       _.each(allNodes, function(n) {
@@ -264,45 +293,30 @@
     }
 
     function onMouseDown(event) {
-      var colliding;
-      var drawnCountries = [];
-      var hitResult = project.hitTest(event.point, hitOptions);
-      var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
-      allNodes = _.flatten(allNodes);
-      var hitCountry;
-      if (hitResult && hitResult.item) {
-        hitCountry = _.find(allNodes, function(c){ return hitResult.item.position.isClose(c.circle.position, c.radius); });
-        console.log("Country found" + hitCountry);
-      }
-      if (hitCountry) {
-        var connectedCountries = []
-        _.each(allNodes, function(n) {
-          if (n.name != hitCountry.name) {
-            n.circle.visible = false;
-          } else {
-            connectedCountries.push(n);
-          }
-        });
-        drawTraces(connectedCountries);
+      if (initialState) {
+        explodeNodes();
+        initialState = false;
       } else {
-        _.each(allNodes, function(n) {
-          yPoint = 650 - (n.gdp / 100);
-          if (yPoint < 50) {
-            yPoint = 50;
-          }
-          n.circle.position.y = yPoint;
-          //detect if its colliding with another circle
-          colliding = detectCollision(drawnCountries, n.circle.position, n.radius);
-          if(colliding) {
-            n.circle.position.x += 2*colliding;
-          } else {
-            //console.log("NO collision, moving on..")
-          }
-          n.infoText.position = n.circle.position + [n.radius, 0];
-          drawnCountries.push(n);
-        });
+        var hitResult = project.hitTest(event.point, hitOptions);
+        var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+        allNodes = _.flatten(allNodes);
+        var hitCountry;
+        if (hitResult && hitResult.item) {
+          hitCountry = _.find(allNodes, function(c){ return hitResult.item.position.isClose(c.circle.position, c.radius); });
+          console.log("Country found" + hitCountry);
+        }
+        if (hitCountry) {
+          var connectedCountries = []
+          _.each(allNodes, function(n) {
+            if (n.name != hitCountry.name) {
+              n.circle.visible = false;
+            } else {
+              connectedCountries.push(n);
+            }
+          });
+          drawTraces(connectedCountries);
+        }
       }
-
     }
 
 </script>
