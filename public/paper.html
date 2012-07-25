@@ -166,6 +166,7 @@
           i++;
         }
         path.smooth();
+        path.visible = false;
         c.infoText.visible = true;
       });
 
@@ -272,9 +273,11 @@
           }
         });
         hitCountry.explode();
-      } else {
+        currentNode = hitCountry;
+      } else if (currentNode) {
         clearInfo();
         _.each(allNodes, function(n){ n.circle.opacity = 1; });
+        currentNode = null;
       }
     }
 
@@ -296,12 +299,15 @@
     }
 
     function onMouseUp(event) {
-      var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
-      allNodes = _.flatten(allNodes);
-      _.each(allNodes, function(n) {
-        n.circle.visible = true;
-        n.infoText.visible = false;
-      });
+      if (currentNode) {
+        var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
+        allNodes = _.flatten(allNodes);
+        _.each(allNodes, function(n) {
+          n.circle.visible = true;
+          n.infoText.visible = false;
+        });
+        currentNode = null;
+      }
     }
 
     function onMouseDown(event) {
@@ -328,6 +334,7 @@
             }
           });
           drawTraces(connectedCountries);
+          currentNode = hitCountry;
         }
       }
     }
