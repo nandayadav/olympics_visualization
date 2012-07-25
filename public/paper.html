@@ -99,7 +99,7 @@
       gdpLabel.fillColor = 'white';
       gdpLabel.content = "GDP per Capita";
       gdpLabel.rotate(270);
-      yrLabel = new PointText(origin + [400, 30]);
+      yrLabel = new PointText(origin + [400, 20]);
       yrLabel.fontSize = 10;
       yrLabel.fillColor = 'white';
       yrLabel.content = "Olympic Year";
@@ -182,7 +182,7 @@
           prevNode = _.find(prevEvent.nodes, function(c){ return (c.name == n.name); });
           if (prevNode) {
             diff = (n.gold + n.silver + n.bronze) - (prevNode.gold + prevNode.silver + prevNode.bronze);
-            tInfo.content = "Medals: " + diff + " GDP: " + (n.gdp - prevNode.gdp);
+            tInfo.content = "( " + diff + " , " + (n.gdp - prevNode.gdp) + " ) ";
             if (diff >= 0) {
               tInfo.fillColor = 'green';
             } else {
@@ -254,32 +254,44 @@
     fetchData(2004, 650, 'yellow');
     fetchData(2008, 800, 'red');
 
-    drawYears([1988, 1992, 1996, 200, 2004, 2008]);
+    drawYears([1988, 1992, 1996, 2000, 2004, 2008]);
+
     function onMouseMove(event) {
       var hitResult = project.hitTest(event.point, hitOptions);
       var allNodes = _.map(olympicEvents, function(event){ return event.nodes; });
       allNodes = _.flatten(allNodes);
+      var hitCountry;
       if (hitResult && hitResult.item) {
-        var hitPoint = hitResult.item.position;
-
-        //console.log("Size: " + allNodes.length);
-        _.each(allNodes, function(n){
-          if (hitPoint.isClose(n.circle.position, n.radius)) {
-            _.each(allNodes, function(k){
-              if (k !== n ) {
-                k.circle.opacity = 0.4;
-                //k.circle.visible = false;
-              }
-            });
-            n.explode();
+        matchingCountries = _.filter(allNodes, function(c) { return hitResult.item.position.isClose(c.circle.position, c.radius); });
+        hitCountry = extractClosestNode(matchingCountries, hitResult);
+      }
+      if(hitCountry) {
+        _.each(allNodes, function(k){
+          if(k != hitCountry) {
+            k.circle.opacity = 0.4;
           }
         });
+        hitCountry.explode();
       } else {
         clearInfo();
-        _.each(allNodes, function(n){
-          n.circle.opacity = 1;
+        _.each(allNodes, function(n){ n.circle.opacity = 1; });
+      }
+    }
+
+    extractClosestNode = function(matchingCountries, hitResult) {
+      country = _.first(matchingCountries);
+      if (matchingCountries.length == 1) {
+        return country;
+      } else {
+        distance = 300;
+        _.each(matchingCountries, function(c) {
+          d = c.circle.position.getDistance(hitResult.item.position);
+          if (distance > d) {
+            country = c;
+            distance = d;
+          }
         });
-        //_.each(allNodes, function(i){ i.circle.visible = true; });
+        return country;
       }
     }
 
@@ -302,9 +314,10 @@
         allNodes = _.flatten(allNodes);
         var hitCountry;
         if (hitResult && hitResult.item) {
-          hitCountry = _.find(allNodes, function(c){ return hitResult.item.position.isClose(c.circle.position, c.radius); });
-          console.log("Country found" + hitCountry);
+          matchingCountries = _.filter(allNodes, function(c) { return hitResult.item.position.isClose(c.circle.position, c.radius); });
+          hitCountry = extractClosestNode(matchingCountries, hitResult);
         }
+
         if (hitCountry) {
           var connectedCountries = []
           _.each(allNodes, function(n) {
