@@ -49,7 +49,7 @@ var hitOptions = {
 
       explode: function() {
         info.content = this.name;
-        medals.content = "Gold: " + this.gold + " Silver: " + this.silver + " Bronze: " + this.bronze;
+        medals.content = "Gold: " + this.gold + " Silver: " + this.silver + " Bronze: " + this.bronze + " GDP: " + this.gdp;
       }
 
     });
@@ -96,8 +96,20 @@ var hitOptions = {
       yrLabel.fontSize = 10;
       yrLabel.fillColor = 'white';
       yrLabel.content = "Olympic Year";
-
     };
+
+    drawGdpLabels = function() {
+      _.each([10000, 20000, 30000, 40000, 50000, 60000], function(e) {
+        yPoint = 650 - (e/100);
+        point = new Point(40, yPoint);
+        drawLine(point, point + [20, 0]);
+        label = new PointText(point - [30, 5]);
+        label.fontSize = 10;
+        label.fillColor = 'white';
+        label.content = e;
+      });
+
+    }
 
     drawYears = function(years) {
       yrLabel = new PointText(new Point(70, 690));
@@ -249,6 +261,7 @@ var hitOptions = {
     fetchData(2008, 800, 'red');
 
     drawYears([1988, 1992, 1996, 2000, 2004, 2008]);
+    drawGdpLabels();
 
     function onMouseMove(event) {
       var hitResult = project.hitTest(event.point, hitOptions);
