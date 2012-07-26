@@ -6,20 +6,33 @@ var hitOptions = {
         tolerance: 1
     };
 
+    var eventData = {"1988": {"total": 739, "location": "Seoul, South Korea"},
+                              "1992": {"total": 815, "location": "Barcelona, Spain"},
+                              "1996": {"total": 842, "location": "Atlanta, USA"},
+                              "2000": {"total": 927, "location": "Sydney, Australia"},
+                              "2004": {"total": 930, "location": "Athens, Greece"},
+                              "2008": {"total": 958, "location": "Beijing, China"}};
+
     var olympicEvents = [];
     var info, medals; //Text Info
     var currentNode = null;
     var initialState = true;
+    var eventInfoPaths = [];
+    var yLabels = [];
 
     //Event class
     var OlympicEvent = (function() {
-      function OlympicEvent(year, color, nodes, xPosition, group) {
+      function OlympicEvent(year, color, nodes, xPosition, group, total, location) {
         this.year = year;
         this.color = color;
         this.nodes = nodes;
         this.xPosition = xPosition;
         this.group = group;
         this.exploded = false; //Initial state, all countries will be grouped together
+        key = year.toString();
+
+        this.total = eventData[key]["total"];
+        this.location = eventData[key]["location"];
         // _.each(this.nodes, function(n){ this.group.addChild(n.circle) });
       }
 
@@ -28,6 +41,10 @@ var hitOptions = {
         //add to group
         //_.each(this.nodes, function(n){ this.group.addChild(n.circle) });
       };
+
+      OlympicEvent.prototype.infoDraw = function() {
+        drawEventInfo(this.total, this.xPosition, this.color, this.year, this.location);
+      }
 
       return OlympicEvent;
     })();
@@ -89,16 +106,12 @@ var hitOptions = {
       origin = new Point(50, 650);
       top = new Point(50, 50);
       this.drawLine(top, top.add([0, 600]), 1);
-      this.drawLine(origin, origin.add([900, 0]), 1);
+      this.drawLine(origin, origin.add([950, 0]), 1);
       gdpLabel = new PointText(new Point(40, 400));
       gdpLabel.fontSize = 10;
       gdpLabel.fillColor = 'white';
       gdpLabel.content = "GDP per Capita";
       gdpLabel.rotate(270);
-      yrLabel = new PointText(origin + [400, 20]);
-      yrLabel.fontSize = 10;
-      yrLabel.fillColor = 'white';
-      yrLabel.content = "Olympic Year";
     };
 
     drawGdpLabels = function() {
@@ -110,20 +123,6 @@ var hitOptions = {
         label.fontSize = 10;
         label.fillColor = 'white';
         label.content = e;
-      });
-
-    }
-
-    drawYears = function(years) {
-      yrLabel = new PointText(new Point(70, 690));
-      yrLabel.fontSize = 14;
-      yrLabel.fillColor = 'white';
-      var i = 0;
-      _.each(years, function(y) {
-        cloned = yrLabel.clone();
-        cloned.content = y;
-        cloned.position.x += (i * 170);
-        i++;
       });
 
     }
@@ -154,8 +153,43 @@ var hitOptions = {
         circle.fillColor = color;
         n.circle = circle;
         n.radius = size;
+        circle.visible = false;
       });
     };
+
+    drawEventInfo = function(total, xPosition, color, year, location) {
+      point = new Point(xPosition + 50, 620);
+      label = new PointText(point);
+      label.fontSize = 20;
+      label.fillColor = color;
+      label.content = location;
+      label.rotate(270);
+      label2 = label.clone();
+      label2.content = year;
+      label2.position.x += 25;
+      label3 = label.clone();
+      label3.fontSize = 10;
+      label3.position.y += 60;
+      label3.position.x -= 40;
+      label3.rotate(90);
+      label4 = label3.clone();
+      label4.position.y += 20;
+      label4.content = year;
+
+      size =  (total)/20;
+      c = new Path.Circle(point - [0, 300], size);
+      c.fillColor = color;
+      labelGroup = new Group([label, label2, c]);
+      eventInfoPaths.push(labelGroup);
+      secondGroup = new Group([label3, label4]);
+      secondGroup.visible = false;
+      yLabels.push(secondGroup);
+    }
+
+    moveLabels = function() {
+      _.each(eventInfoPaths, function(n){ n.visible = false; } );
+      _.each(yLabels, function(n){ n.visible = true; } );
+    }
 
     drawTraces = function(countries) {
       countries = _.sortBy(countries, function(c){ return c.year; });
@@ -238,6 +272,7 @@ var hitOptions = {
             //   n.circle.position.x += 2*colliding;
             // }
             n.infoText.position = n.circle.position + [n.radius, 0];
+            n.circle.visible = true;
             drawnCountries.push(n);
         });
       });
@@ -255,6 +290,7 @@ var hitOptions = {
           });
           var olympicEvent = new OlympicEvent(year, color, results, xPosition, new Group());
           olympicEvents.push(olympicEvent);
+          olympicEvent.infoDraw();
           olympicEvent.initialDraw();
         }
 
@@ -265,7 +301,7 @@ var hitOptions = {
     //Draw lines
     drawAxes();
     //Info setup
-    setupInfo(100, 50);
+    setupInfo(100, 80);
     fetchData(1988, 50, 'green');
     fetchData(1992, 220, 'white');
     fetchData(1996, 390, 'orange');
@@ -273,7 +309,7 @@ var hitOptions = {
     fetchData(2004, 730, 'yellow');
     fetchData(2008, 900, 'red');
 
-    drawYears([1988, 1992, 1996, 2000, 2004, 2008]);
+    //drawYears([1988, 1992, 1996, 2000, 2004, 2008]);
     drawGdpLabels();
 
     function onMouseMove(event) {
@@ -331,6 +367,7 @@ var hitOptions = {
 
     function onMouseDown(event) {
       if (initialState) {
+        moveLabels();
         explodeNodes();
         initialState = false;
       } else {
