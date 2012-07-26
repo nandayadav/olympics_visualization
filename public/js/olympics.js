@@ -182,7 +182,7 @@ var hitOptions = {
       prevEvent = _.find(olympicEvents, function(e){ return (e.year == (year - 4)); });
       _.each(countries, function(n) {
         tInfo = new PointText(n.circle.position + [n.radius, 0]);
-        info.fontSize = 10;
+        tInfo.fontSize = 10;
 
         if (prevEvent) {
           prevNode = _.find(prevEvent.nodes, function(c){ return (c.name == n.name); });
@@ -218,6 +218,7 @@ var hitOptions = {
             if (yPoint < 50) {
               yPoint = 50;
             }
+            n.circle.position.x = e.xPosition;
             n.circle.position.y = yPoint;
             //detect if its colliding with another circle
             var colliding = false;
