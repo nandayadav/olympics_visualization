@@ -131,7 +131,7 @@ var hitOptions = {
       var closeCircle;
       closeCircle = _.find(countries, function(c){ return point.isClose(c.circle.position, size + c.radius); });
       if(closeCircle)
-        return closeCircle.radius;
+        return closeCircle.radius/2;
       else
         return false;
     }
@@ -220,10 +220,19 @@ var hitOptions = {
             }
             n.circle.position.y = yPoint;
             //detect if its colliding with another circle
-            colliding = detectCollision(drawnCountries, n.circle.position, n.radius);
-            if(colliding) {
-              n.circle.position.x += 2*colliding;
-            }
+            var colliding = false;
+            var counter = 0;
+            do {
+              colliding = detectCollision(drawnCountries, n.circle.position, n.radius);
+              if(colliding) {
+                n.circle.position.x += 2*colliding;
+              }
+              counter++;
+            } while (colliding || (counter <= 4))
+            // colliding = detectCollision(drawnCountries, n.circle.position, n.radius);
+            // if(colliding) {
+            //   n.circle.position.x += 2*colliding;
+            // }
             n.infoText.position = n.circle.position + [n.radius, 0];
             drawnCountries.push(n);
         });
