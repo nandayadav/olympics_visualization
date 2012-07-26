@@ -68,6 +68,9 @@ var hitOptions = {
       medals = new PointText(new Point(x, y + 20));
       medals.characterStyle = medalsStyle;
       medals.content = "";
+      // instructions = new PointText(new Point(x + 700, y));
+      // instructions.characterStyle = medalsStyle;
+      // instructions.content = "Click on circle to see history"
     }
 
     clearInfo = function() {
@@ -119,7 +122,7 @@ var hitOptions = {
       _.each(years, function(y) {
         cloned = yrLabel.clone();
         cloned.content = y;
-        cloned.position.x += (i * 150);
+        cloned.position.x += (i * 170);
         i++;
       });
 
@@ -264,11 +267,11 @@ var hitOptions = {
     //Info setup
     setupInfo(100, 50);
     fetchData(1988, 50, 'green');
-    fetchData(1992, 200, 'white');
-    fetchData(1996, 350, 'orange');
-    fetchData(2000, 500, 'teal');
-    fetchData(2004, 650, 'yellow');
-    fetchData(2008, 800, 'red');
+    fetchData(1992, 220, 'white');
+    fetchData(1996, 390, 'orange');
+    fetchData(2000, 560, 'teal');
+    fetchData(2004, 730, 'yellow');
+    fetchData(2008, 900, 'red');
 
     drawYears([1988, 1992, 1996, 2000, 2004, 2008]);
     drawGdpLabels();
