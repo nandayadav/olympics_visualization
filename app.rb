@@ -8,6 +8,7 @@ class App < Sinatra::Base
   enable :logging
   use Rack::Session::Cookie
   #register Barista::Integration::Sinatra
+  set :protection, :except => :frame_options
   get '/' do
     File.read(File.join('public', 'paper.html'))
   end
@@ -28,5 +29,5 @@ class App < Sinatra::Base
     end
     countries.to_json
   end
-  
+
 end
