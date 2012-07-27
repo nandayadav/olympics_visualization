@@ -6,12 +6,12 @@ var hitOptions = {
         tolerance: 1
     };
 
-    var eventData = {"1988": {"total": 739, "location": "Seoul, South Korea"},
-                              "1992": {"total": 815, "location": "Barcelona, Spain"},
-                              "1996": {"total": 842, "location": "Atlanta, USA"},
-                              "2000": {"total": 927, "location": "Sydney, Australia"},
-                              "2004": {"total": 930, "location": "Athens, Greece"},
-                              "2008": {"total": 958, "location": "Beijing, China"}};
+    var eventData = {"1988": {"total": 739, "location": "Seoul, South Korea", "total_countries": 159, "medal_countries": 52},
+                              "1992": {"total": 815, "location": "Barcelona, Spain", "total_countries": 169, "medal_countries": 64},
+                              "1996": {"total": 842, "location": "Atlanta, USA", "total_countries": 197, "medal_countries": 79},
+                              "2000": {"total": 927, "location": "Sydney, Australia", "total_countries": 200, "medal_countries": 80},
+                              "2004": {"total": 930, "location": "Athens, Greece", "total_countries": 201, "medal_countries": 74},
+                              "2008": {"total": 958, "location": "Beijing, China", "total_countries": 204, "medal_countries": 86}};
 
     var olympicEvents = [];
     var info, medals; //Text Info
@@ -22,7 +22,7 @@ var hitOptions = {
 
     //Event class
     var OlympicEvent = (function() {
-      function OlympicEvent(year, color, nodes, xPosition, group, total, location) {
+      function OlympicEvent(year, color, nodes, xPosition, group, total, location, total_countries, medal_countries) {
         this.year = year;
         this.color = color;
         this.nodes = nodes;
@@ -33,6 +33,8 @@ var hitOptions = {
 
         this.total = eventData[key]["total"];
         this.location = eventData[key]["location"];
+        this.total_countries = eventData[key]["total_countries"];
+        this.medal_countries = eventData[key]["medal_countries"];
         // _.each(this.nodes, function(n){ this.group.addChild(n.circle) });
       }
 
@@ -43,7 +45,7 @@ var hitOptions = {
       };
 
       OlympicEvent.prototype.infoDraw = function() {
-        drawEventInfo(this.total, this.xPosition, this.color, this.year, this.location);
+        drawEventInfo(this);
       }
 
       return OlympicEvent;
@@ -157,15 +159,24 @@ var hitOptions = {
       });
     };
 
-    drawEventInfo = function(total, xPosition, color, year, location) {
-      point = new Point(xPosition + 50, 620);
+    drawEventInfo = function(event) {
+      point = new Point(event.xPosition + 50, 620);
       label = new PointText(point);
       label.fontSize = 20;
-      label.fillColor = color;
-      label.content = location;
+      label.fillColor = event.color;
+      label.content = event.location;
       label.rotate(270);
+      label1 = label.clone();
+      label1.content = "Total countries: " + event.total_countries ;
+      label1.fontSize = 12;
+      label1.rotate(90);
+      label1.position.y -= 380;
+      label1.position.x -= 30;
+      label5 = label1.clone();
+      label5.content = "Medalist Countries: " + event.medal_countries;
+      label5.position.y -= 20;
       label2 = label.clone();
-      label2.content = year;
+      label2.content = event.year;
       label2.position.x += 25;
       label3 = label.clone();
       label3.fontSize = 10;
@@ -174,12 +185,15 @@ var hitOptions = {
       label3.rotate(90);
       label4 = label3.clone();
       label4.position.y += 20;
-      label4.content = year;
+      label4.content = event.year;
 
-      size =  (total)/20;
+      size =  (event.total)/20;
       c = new Path.Circle(point - [0, 300], size);
-      c.fillColor = color;
-      labelGroup = new Group([label, label2, c]);
+      c.fillColor = event.color;
+      medalLabel = label1.clone();
+      medalLabel.content = "Medals: " + event.total;
+      medalLabel.position.y += 20;
+      labelGroup = new Group([label, label1, label2, c, label5, medalLabel]);
       eventInfoPaths.push(labelGroup);
       secondGroup = new Group([label3, label4]);
       secondGroup.visible = false;
